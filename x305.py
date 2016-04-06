@@ -56,7 +56,6 @@ class X305ThRead(QThread):
         return bytes(dataW)
     def run(self):
         ser = serial.Serial(self.port,19200)
-        ser.open()
         print('PortOpen=',ser.isOpen())
 
         while not self.stopRun:
@@ -73,7 +72,7 @@ class X305ThRead(QThread):
             self.getSZU(data)
             self.msgWrite(dr)
             ser.write(dr)
-        port.close()
+        ser.close()
         print('runClose')
 
     def __del__(self):
@@ -106,7 +105,8 @@ class emulICPDAS(QWidget):
 
         gridPort=QGridLayout(gbPort)
         gridX305 = QGridLayout(gbX305)
-        self.linePort=QLineEdit('/dev/COM7')
+        self.linePort=QLineEdit('COM6')
+        #self.linePort=QLineEdit('/dev/COM7')
         self.linePort.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
         label = QLabel('Port:')
         label.setAlignment(Qt.AlignRight)
