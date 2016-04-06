@@ -77,25 +77,70 @@ class X305ThRead(QThread):
 
     def __del__(self):
         print('delThReadPort')
+class LineControl(QWidget):
+        def __init__(self,arg):
+            QWidget.__init__(self)
+            a=arg.split('|')
+            HL=QHBoxLayout(self);
+            cb1= QCheckBox(a[0])
+            cb1.setLayoutDirection(Qt.RightToLeft)
+            cb2 = QCheckBox()
+            line = QLineEdit(a[1])
+            line.setFixedWidth(150)
+            line.setReadOnly(True)
+            line.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
+
+            HL.addWidget(cb1)
+            HL.addWidget(cb2)
+            HL.addWidget(line)
+            if a[2]!='-':
+                self.dsb = QDoubleSpinBox()
+                self.dsb.setValue(float(a[2]))
+                HL.addWidget(self.dsb)
+                BN=QPushButton(a[3])
+                BN.setFixedWidth(30)
+                BN.clicked.connect(self.setValue)
+                BA=QPushButton(a[4])
+                BA.setFixedWidth(30)
+                BA.clicked.connect(self.setValue)
+                HL.addWidget(BN)
+                HL.addWidget(BA)
+            if a[5]!='-':
+               SA1=QPushButton(a[5])
+               SA1.setFixedWidth(30)
+               SA2=QPushButton(a[6])
+               SA2.setFixedWidth(30)
+               SA1.clicked.connect(self.setValue)
+               SA2.clicked.connect(self.setValue)
+               HL.addWidget(SA1)
+               HL.addWidget(SA2)
+            SI =QSpacerItem(1,1, QSizePolicy.Expanding, QSizePolicy.Fixed);
+            HL.addItem(SI)
+        def setValue(self):
+            sender=self.sender()
+            self.dsb.setValue(float(sender.text()))
+        def __del__(self):
+            pass
 class emulICPDAS(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
 
-        ports=['AD0|NEK1- Место хр.k.',
-               'AD1|РВ1- Место хр.к.',
-               'AD2|РВ2- Трав.ванны',
-               'AD3|РВ3- Трав.ванны',
-               'AD4|NEK2- Трав.ванны',
-               'AD5|SSS-903 - Level1',
-               'AD6|SSS-903 - Level2',
-               'DI0|SSS-903 - FAULT|',
-               'DO0|Светавое табло']
+        ports=['AD0|NEK1,NEK2 МХК|1.8|1.8|4.8|2.3|3|',
+               'AD1|NEK3,NEK4 ТВ|1.8|1.8|4.8|2.3|3|',
+               'AD2|РВ1 Зона ВХК|3.6|3.6|1.8|-|-|',
+               'AD3|РВ2 ТР Ванны|3.6|3.6|1.8|-|-|',
+               'AD4|РВ3 ТР Ванны|3.6|3.6|1.8|-|-|',
+               'AD5|ССС-903м П-1|3.6|3.6|1.8|-|-|',
+               'AD6|ССС-903м П-2|3.6|3.6|1.8|-|-|',
+               'DI0|ССС-903м Неисправность|-|-|-|-|-|',
+               'DI1|-|-|-|-|-|-|',
+               'DO0|Светавое табло|-|-|-|-|-|',
+               'DO1|-|-|-|-|-|-|']
 
         vSpacer = QSpacerItem(1,1,QSizePolicy.Ignored,QSizePolicy.Expanding)
 
         gbPort= QGroupBox('Settings')
         gbX305= QGroupBox('X305')
-
 
         grid0=QGridLayout(self)
         grid0.addWidget(gbPort,0,0)
@@ -129,15 +174,18 @@ class emulICPDAS(QWidget):
             cb1= QCheckBox(a[0])
             cb1.setLayoutDirection(Qt.RightToLeft)
 
-
             line = QLineEdit(a[1])
             line.setFixedWidth(150)
             line.setReadOnly(True)
             line.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
-            cb2= QCheckBox()
+            cb2 = QCheckBox()
+            dsb = QDoubleSpinBox()
             gridX305.addWidget(cb1,i,0)
-            gridX305.addWidget(line,i,1)
-            gridX305.addWidget(cb2,i,2)
+            gridX305.addWidget(cb2,i,1)
+            gridX305.addWidget(line,i,2)
+
+            LC=LineControl(p)
+            gridX305.addWidget(LC,i,8)
             subItem.append(cb1)
             subItem.append(cb2)
             subItem.append(line)
