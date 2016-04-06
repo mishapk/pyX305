@@ -36,6 +36,7 @@ class X305ThRead(QThread):
         dataW[0]=data[0]
         dataW[1]=data[1]
         dataW[2]=data[2]
+        dataW[2]=0x20
         rs=0
         ri=0
         for iInChannel in range(0,8):

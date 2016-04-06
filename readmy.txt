@@ -1,0 +1,39 @@
+protocol v3
+byte
+00  - 0x10 Addres
+01  - 0x04 number function
+02  - subfunction
+03  - 0x20 size of byte information
+04  - AD0 4 bites IEEE 754
+05  
+06
+07
+08  - AD1 4 bites IEEE 754
+09
+10
+11
+12  - AD2 4 bites IEEE 754
+13
+14
+15
+16  - AD3 4 bites IEEE 754
+17
+18
+19
+20  - AD4 4 bites IEEE 754
+21
+22
+23
+24  - AD5 4 bites IEEE 754
+25
+26
+27
+28  - AD6 4 bites IEEE 754
+29
+30
+31
+32  - DI0
+33  - DI1
+34  - DO0
+35  - DI1
+36  - 0xDA End responce
