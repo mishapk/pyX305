@@ -81,18 +81,21 @@ class X305ThRead(QThread):
 class LineControl(QWidget):
         def __init__(self,arg):
             QWidget.__init__(self)
+            subItem=[]
             a=arg.split('|')
             HL=QHBoxLayout(self);
-            cb1= QCheckBox(a[0])
-            cb1.setLayoutDirection(Qt.RightToLeft)
-            cb2 = QCheckBox()
+            cb= QCheckBox(a[0])
+            cb.setFixedWidth(40)
+            cb.setLayoutDirection(Qt.RightToLeft)
+
             line = QLineEdit(a[1])
             line.setFixedWidth(150)
             line.setReadOnly(True)
             line.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
+            subItem.append(cb)
+            subItem.append(line)
+            HL.addWidget(cb)
 
-            HL.addWidget(cb1)
-            HL.addWidget(cb2)
             HL.addWidget(line)
             if a[2]!='-':
                 self.dsb = QDoubleSpinBox()
@@ -117,6 +120,7 @@ class LineControl(QWidget):
                HL.addWidget(SA2)
             SI =QSpacerItem(1,1, QSizePolicy.Expanding, QSizePolicy.Fixed);
             HL.addItem(SI)
+
         def setValue(self):
             sender=self.sender()
             self.dsb.setValue(float(sender.text()))
