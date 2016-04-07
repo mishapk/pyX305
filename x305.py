@@ -2,13 +2,17 @@
 import serial
 import time
 import os
+import struct
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4 import uic
 class X305ThRead(QThread):
     msgProgress = pyqtSignal(str)
-    SZUProgress = pyqtSignal(str)
+    DO0 = pyqtSignal(str)
+    DO1 = pyqtSignal(str)
+    DO0CH =pyqtSignal(bool)
+    DO1CH =pyqtSignal(bool)
     stopRun=False
     def __init__(self,port, Item305):
         QThread.__init__(self)
@@ -20,39 +24,48 @@ class X305ThRead(QThread):
         self.msgProgress.emit(('<b><font color=green>{}</font>').format(data))
     def msgWrite(self,data):
         self.msgProgress.emit(('<b><font color=#900000>{}</font>').format(data))
-    def getSZU(self,data):
+    def getDO(self,data):
         if(data[0]!=0x10): return
         if(data[1]!=0x03): return
+        print(data)
         if(data[2]==0x01):
-            self.SZUProgress.emit('background-color: red;')
-            print('szu.ON')
+            if data[4]==0x00:
+                self.DO0.emit('background-color: red;')
+                self.DO0CH.emit(True)
+                print('DO0.on')
+            if data[4]==0x01:
+                self.DO1.emit('background-color: red;')
+                self.DO1CH.emit(True)
+                print('DO1.on')
+
         if(data[2]==0x02):
-            print('szu.OFF')
-            self.SZUProgress.emit('')
+            if data[4]==0x00:
+                self.DO0.emit('')
+                self.DO0CH.emit(False)
+            if data[4]==0x01:
+                self.DO1.emit('')
+                self.DO0CH.emit(False)
     def formData(self,data):
-        dataW=[0]*7
+        dataW=[0]*37
         if data[0]!=0x10: return bytes(dataW);
         if data[1]!=0x04 : return bytes(dataW);
         dataW[0]=data[0]
         dataW[1]=data[1]
         dataW[2]=data[2]
-        dataW[2]=0x20
-        rs=0
-        ri=0
-        for iInChannel in range(0,8):
-            if(self.Item305[iInChannel][0].isChecked()):
-                rs=rs|(1<<iInChannel)
-            else:
-                rs=rs|(0<<iInChannel)
-            if(self.Item305[iInChannel][1].isChecked()):
-                ri=ri|(1<<iInChannel)
-            else:
-                ri=ri|(0<<iInChannel)
+        dataW[3]=0x20
 
-        dataW[3]=0x02
-        dataW[4]=rs
-        dataW[5]=ri
-        dataW[6]=0xda
+        for iInChannel in range(0,6):
+            fv=struct.pack('f',self.Item305[iInChannel][2].value())
+            dataW[iInChannel*4+4]=fv[0]
+            dataW[iInChannel*4+5]=fv[1]
+            dataW[iInChannel*4+6]=fv[2]
+            dataW[iInChannel*4+7]=fv[3]
+
+        dataW[32]= 1 if self.Item305[7][0].isChecked() else 0
+        dataW[33]= 1 if self.Item305[8][0].isChecked() else 0
+        dataW[34]= 1 if self.Item305[9][0].isChecked() else 0
+        dataW[35]= 1 if self.Item305[10][0].isChecked() else 0
+        dataW[36]=0xda
 
         return bytes(dataW)
     def run(self):
@@ -68,9 +81,9 @@ class X305ThRead(QThread):
             data += ser.readline(dataLeft)
             #print(data)
             self.msgRead(data)
-            self.getSZU(data)
+            self.getDO(data)
             dr=self.formData(data)
-            self.getSZU(data)
+            self.getDO(data)
             self.msgWrite(dr)
             ser.write(dr)
         ser.close()
@@ -81,19 +94,21 @@ class X305ThRead(QThread):
 class LineControl(QWidget):
         def __init__(self,arg):
             QWidget.__init__(self)
-            subItem=[]
+            self.subItem=[]
             a=arg.split('|')
             HL=QHBoxLayout(self);
+            HL.setSpacing(2)
+            #Create Check Box
             cb= QCheckBox(a[0])
             cb.setFixedWidth(40)
             cb.setLayoutDirection(Qt.RightToLeft)
+            self.subItem.append(cb)
 
             line = QLineEdit(a[1])
             line.setFixedWidth(150)
             line.setReadOnly(True)
             line.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
-            subItem.append(cb)
-            subItem.append(line)
+            self.subItem.append(line)
             HL.addWidget(cb)
 
             HL.addWidget(line)
@@ -109,6 +124,7 @@ class LineControl(QWidget):
                 BA.clicked.connect(self.setValue)
                 HL.addWidget(BN)
                 HL.addWidget(BA)
+                self.subItem.append(self.dsb)
             if a[5]!='-':
                SA1=QPushButton(a[5])
                SA1.setFixedWidth(30)
@@ -121,6 +137,9 @@ class LineControl(QWidget):
             SI =QSpacerItem(1,1, QSizePolicy.Expanding, QSizePolicy.Fixed);
             HL.addItem(SI)
 
+
+        def getSubItem(self):
+            return self.subItem
         def setValue(self):
             sender=self.sender()
             self.dsb.setValue(float(sender.text()))
@@ -155,6 +174,7 @@ class emulICPDAS(QWidget):
 
         gridPort=QGridLayout(gbPort)
         gridX305 = QGridLayout(gbX305)
+        gridX305.setSpacing(0)
         self.linePort=QLineEdit('COM6')
         #self.linePort=QLineEdit('/dev/COM7')
         self.linePort.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
@@ -172,36 +192,23 @@ class emulICPDAS(QWidget):
         grid0.addWidget(self.textEdit,0,1,0,1)
         i=0
         color=['','background-color: rgb(255, 0, 0)'];
-        self.Items=[]
+        self.items=[]
         for p in ports:
             subItem=[]
             a=p.split('|')
-            cb1= QCheckBox(a[0])
-            cb1.setLayoutDirection(Qt.RightToLeft)
 
-            line = QLineEdit(a[1])
-            line.setFixedWidth(150)
-            line.setReadOnly(True)
-            line.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
-            cb2 = QCheckBox()
-            dsb = QDoubleSpinBox()
-            gridX305.addWidget(cb1,i,0)
-            gridX305.addWidget(cb2,i,1)
-            gridX305.addWidget(line,i,2)
 
             LC=LineControl(p)
-            gridX305.addWidget(LC,i,8)
-            subItem.append(cb1)
-            subItem.append(cb2)
-            subItem.append(line)
-            self.Items.append(subItem)
+            gridX305.addWidget(LC,i,0)
+            self.items.append(LC.getSubItem())
             i+=1
+        print(self.items)
 
     def bStart(self):
         if not self.bPort.isChecked():
             self.bPort.setText('Open')
             print('ClosePort')
-            self.Items[0][1].setChecked(False)
+            #self.items[0][1].setChecked(False)
             self.writeMessage('PortClose')
             self.a.Stop()
             self.a.terminate()
@@ -211,9 +218,12 @@ class emulICPDAS(QWidget):
 
             print('OpenPort')
             self.writeMessage('PortOpen')
-            self.a= X305ThRead(self.linePort.text(),self.Items)
+            self.a= X305ThRead(self.linePort.text(),self.items)
             self.a.msgProgress.connect(self.writeMessage)
-            self.a.SZUProgress.connect(self.Items[8][2].setStyleSheet)
+            self.a.DO0.connect(self.items[9][1].setStyleSheet)
+            self.a.DO0CH.connect(self.items[9][0].setCheckState)
+            self.a.DO1.connect(self.items[10][1].setStyleSheet)
+            self.a.DO1CH.connect(self.items[10][0].setCheckState)
             self.a.start()
     def writeMessage(self, msg):
         txt=('<font color=gray>[{}]</font>: {}').format(QTime.currentTime().toString(),msg)
