@@ -54,7 +54,7 @@ class X305ThRead(QThread):
         dataW[2]=data[2]
         dataW[3]=0x20
 
-        for iInChannel in range(0,6):
+        for iInChannel in range(0,7):
             fv=struct.pack('f',self.Item305[iInChannel][2].value())
             dataW[iInChannel*4+4]=fv[0]
             dataW[iInChannel*4+5]=fv[1]
